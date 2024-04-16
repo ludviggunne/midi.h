@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     // Add title
     (void) midi_track_add_meta_event_text(track, 0,
                                           MIDI_TEXT_SEQUENCE_OR_TRACK_NAME,
-                                          "Lydian scale");
+                                          "Example track");
 
     // Play scale as quarter notes
     midi_message_t msg;
