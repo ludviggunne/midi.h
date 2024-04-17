@@ -67,7 +67,7 @@ typedef struct {
 
 midi_message_t midi_message_note_on(int channel, int key, int velocity);
 midi_message_t midi_message_note_off(int channel, int key, int velocity);
-midi_message_t midi_message_pitch_wheel_cahnge(int channel, int value);
+midi_message_t midi_message_pitch_wheel_change(int channel, int value);
 
 uint16_t midi_division_ticks_per_quarter_note(uint16_t ticks);
 
@@ -146,7 +146,7 @@ midi_message_t midi_message_note_off(int channel, int key, int velocity)
     return msg;
 }
 
-midi_message_t midi_message_pitch_wheel_cahnge(int channel, int value)
+midi_message_t midi_message_pitch_wheel_change(int channel, int value)
 {
     midi_message_t msg = { 0 };
     msg.status = channel & 0xf;
