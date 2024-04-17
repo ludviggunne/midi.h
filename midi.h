@@ -32,9 +32,12 @@
 #define MIDI_ERROR -1
 #define MIDI_OK     0
 
-#define MIDI_MESSAGE_NOTE_OFF_EVENT 8
-#define MIDI_MESSAGE_NOTE_ON_EVENT  9
+#define MIDI_MESSAGE_NOTE_OFF_EVENT      8
+#define MIDI_MESSAGE_NOTE_ON_EVENT       9
+#define MIDI_MESSAGE_PITCH_WHEEL_CHANGE 14
 /* TODO: More messages */
+
+#define MIDI_PITCH_WHEEL_CENTRE 0x2000
 
 #define MIDI_TEXT_TEXT_EVENT             1
 #define MIDI_TEXT_COPYRIGHT_NOTICE       2
@@ -64,6 +67,7 @@ typedef struct {
 
 midi_message_t midi_message_note_on(int channel, int key, int velocity);
 midi_message_t midi_message_note_off(int channel, int key, int velocity);
+midi_message_t midi_message_pitch_wheel_cahnge(int channel, int value);
 
 uint16_t midi_division_ticks_per_quarter_note(uint16_t ticks);
 
@@ -139,6 +143,16 @@ midi_message_t midi_message_note_off(int channel, int key, int velocity)
     msg.status |= MIDI_MESSAGE_NOTE_OFF_EVENT << 4;
     msg.data[0] = key & 0x7f;
     msg.data[1] = velocity & 0x7f;
+    return msg;
+}
+
+midi_message_t midi_message_pitch_wheel_cahnge(int channel, int value)
+{
+    midi_message_t msg = { 0 };
+    msg.status = channel & 0xf;
+    msg.status |= MIDI_MESSAGE_PITCH_WHEEL_CHANGE << 4;
+    msg.data[0] = value & 0x7f;
+    msg.data[1] = (value >> 7) & 0x7f;
     return msg;
 }
 
