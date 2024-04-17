@@ -1,3 +1,4 @@
 example
-example.mid
+*.mid
 *.sf2
+*.wav
