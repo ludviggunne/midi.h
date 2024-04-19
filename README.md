@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     }
 
     // Finish track and add to context
-    midi_track_add_end_of_track_event(track, 512);
+    (void) midi_track_add_end_of_track_event(track, 512);
     midi_add_track(&midi, track);
 
     // Output and cleanup
