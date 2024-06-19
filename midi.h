@@ -34,6 +34,7 @@
 
 #define MIDI_MESSAGE_NOTE_OFF_EVENT      8
 #define MIDI_MESSAGE_NOTE_ON_EVENT       9
+#define MIDI_MESSAGE_CONTROL_CHANGE     11
 #define MIDI_MESSAGE_PITCH_WHEEL_CHANGE 14
 /* TODO: More messages */
 
@@ -51,14 +52,16 @@
 #define MIDI_FORMAT_SIMULTANEOUS 1
 #define MIDI_FORMAT_INDEPENDENT  2
 
-typedef struct {
+typedef struct
+{
     uint8_t status;
     uint8_t data[2];
 } midi_message_t;
 
 typedef struct midi_track midi_track_t;
 
-typedef struct {
+typedef struct
+{
     uint16_t format;
     uint16_t ntrks;
     uint16_t division;
@@ -68,6 +71,7 @@ typedef struct {
 midi_message_t midi_message_note_on(int channel, int key, int velocity);
 midi_message_t midi_message_note_off(int channel, int key, int velocity);
 midi_message_t midi_message_pitch_wheel_change(int channel, int value);
+midi_message_t midi_message_control_change(int channel, int ctrl, int value);
 
 uint16_t midi_division_ticks_per_quarter_note(uint16_t ticks);
 
@@ -91,14 +95,16 @@ int midi_write(midi_t * midi, FILE * f);
 
 #define MIDI_TRACK_INITIAL_CAPACITY 16
 
-struct midi_track {
+struct midi_track
+{
     struct midi_track *next;
     uint8_t *data;
     size_t size;
     size_t cap;
 };
 
-static int _fwrite_u32_be(FILE *f, uint32_t value)
+static int
+_fwrite_u32_be(FILE *f, uint32_t value)
 {
     uint8_t buf[4];
     buf[0] = (value >> 24) & 0xff;
@@ -106,27 +112,31 @@ static int _fwrite_u32_be(FILE *f, uint32_t value)
     buf[2] = (value >> 8) & 0xff;
     buf[3] = value & 0xff;
 
-    if (fwrite(buf, 1, 4, f) < 4) {
+    if (fwrite(buf, 1, 4, f) < 4)
+    {
         return MIDI_ERROR;
     }
 
     return MIDI_OK;
 }
 
-static int _fwrite_u16_be(FILE *f, uint32_t value)
+static int
+_fwrite_u16_be(FILE *f, uint32_t value)
 {
     uint8_t buf[2];
     buf[0] = (value >> 8) & 0xff;
     buf[1] = value & 0xff;
 
-    if (fwrite(buf, 1, 2, f) < 2) {
+    if (fwrite(buf, 1, 2, f) < 2)
+    {
         return MIDI_ERROR;
     }
 
     return MIDI_OK;
 }
 
-midi_message_t midi_message_note_on(int channel, int key, int velocity)
+midi_message_t
+midi_message_note_on(int channel, int key, int velocity)
 {
     midi_message_t msg = { 0 };
     msg.status = channel & 0xf;
@@ -136,7 +146,8 @@ midi_message_t midi_message_note_on(int channel, int key, int velocity)
     return msg;
 }
 
-midi_message_t midi_message_note_off(int channel, int key, int velocity)
+midi_message_t
+midi_message_note_off(int channel, int key, int velocity)
 {
     midi_message_t msg = { 0 };
     msg.status = channel & 0xf;
@@ -146,7 +157,8 @@ midi_message_t midi_message_note_off(int channel, int key, int velocity)
     return msg;
 }
 
-midi_message_t midi_message_pitch_wheel_change(int channel, int value)
+midi_message_t
+midi_message_pitch_wheel_change(int channel, int value)
 {
     midi_message_t msg = { 0 };
     msg.status = channel & 0xf;
@@ -156,15 +168,29 @@ midi_message_t midi_message_pitch_wheel_change(int channel, int value)
     return msg;
 }
 
-uint16_t midi_division_ticks_per_quarter_note(uint16_t ticks)
+midi_message_t
+midi_message_control_change(int channel, int ctrl, int value)
+{
+    midi_message_t msg = { 0 };
+    msg.status = channel & 0xf;
+    msg.status |= MIDI_MESSAGE_CONTROL_CHANGE << 4;
+    msg.data[0] = ctrl & 0x7f;
+    msg.data[1] = value & 0x7f;
+    return msg;
+}
+
+uint16_t
+midi_division_ticks_per_quarter_note(uint16_t ticks)
 {
     return ticks & 0x7fff;
 }
 
-midi_track_t *midi_track_create(void)
+midi_track_t *
+midi_track_create(void)
 {
-    midi_track_t *track = malloc(sizeof(*track));
-    if (track == NULL) {
+    midi_track_t *track = malloc(sizeof (*track));
+    if (track == NULL)
+    {
         return NULL;
     }
 
@@ -173,7 +199,8 @@ midi_track_t *midi_track_create(void)
     track->data = malloc(track->cap);
     track->size = 0;
 
-    if (track->data == NULL) {
+    if (track->data == NULL)
+    {
         free(track);
         return NULL;
     }
@@ -181,21 +208,26 @@ midi_track_t *midi_track_create(void)
     return track;
 }
 
-void midi_track_destroy(midi_track_t *track)
+void
+midi_track_destroy(midi_track_t *track)
 {
     free(track->data);
     free(track);
 }
 
-static uint8_t *_midi_track_alloc(midi_track_t *track, size_t size)
+static uint8_t *
+_midi_track_alloc(midi_track_t *track, size_t size)
 {
-    if (track->size + size > track->cap) {
+    if (track->size + size > track->cap)
+    {
         size_t cap = track->cap * 2;
-        while (track->size + size > cap) {
+        while (track->size + size > cap)
+        {
             cap *= 2;
         }
-        uint8_t *data = realloc(track->data, sizeof(*data) * cap);
-        if (data == NULL) {
+        uint8_t *data = realloc(track->data, sizeof (*data) * cap);
+        if (data == NULL)
+        {
             return NULL;
         }
         track->data = data;
@@ -207,7 +239,8 @@ static uint8_t *_midi_track_alloc(midi_track_t *track, size_t size)
     return ptr;
 }
 
-static int _midi_track_write_vlq(midi_track_t *track, uint32_t x)
+static int
+_midi_track_write_vlq(midi_track_t *track, uint32_t x)
 {
     uint8_t buf[4];
     size_t size = 1;
@@ -215,14 +248,16 @@ static int _midi_track_write_vlq(midi_track_t *track, uint32_t x)
     buf[3] = x & 0x7f;
     x >>= 7;
 
-    while (x) {
+    while (x)
+    {
         buf[3 - size] = (x & 0x7f) | 0x80;
         x >>= 7;
         size++;
     }
 
     uint8_t *ptr = _midi_track_alloc(track, size);
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         return MIDI_ERROR;
     }
 
@@ -230,17 +265,21 @@ static int _midi_track_write_vlq(midi_track_t *track, uint32_t x)
     return MIDI_OK;
 }
 
-static int _midi_track_write_to_file(midi_track_t *track, FILE *f)
+static int
+_midi_track_write_to_file(midi_track_t *track, FILE *f)
 {
-    if (fwrite("MTrk", 1, 4, f) < 4) {
+    if (fwrite("MTrk", 1, 4, f) < 4)
+    {
         return MIDI_ERROR;
     }
 
-    if (_fwrite_u32_be(f, track->size)) {
+    if (_fwrite_u32_be(f, track->size))
+    {
         return MIDI_ERROR;
     }
 
-    if (fwrite(track->data, 1, track->size, f) < track->size) {
+    if (fwrite(track->data, 1, track->size, f) < track->size)
+    {
         return MIDI_ERROR;
     }
 
@@ -249,15 +288,18 @@ static int _midi_track_write_to_file(midi_track_t *track, FILE *f)
     return MIDI_OK;
 }
 
-int midi_track_add_midi_message(midi_track_t *track, uint32_t dt,
-                                midi_message_t msg)
+int
+midi_track_add_midi_message(midi_track_t *track, uint32_t dt,
+                            midi_message_t msg)
 {
-    if (_midi_track_write_vlq(track, dt)) {
+    if (_midi_track_write_vlq(track, dt))
+    {
         return MIDI_ERROR;
     }
 
     uint8_t *ptr = _midi_track_alloc(track, 3);
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         return MIDI_ERROR;
     }
 
@@ -268,17 +310,20 @@ int midi_track_add_midi_message(midi_track_t *track, uint32_t dt,
     return MIDI_OK;
 }
 
-int midi_track_add_end_of_track_event(midi_track_t *track, uint32_t dt)
+int
+midi_track_add_end_of_track_event(midi_track_t *track, uint32_t dt)
 {
     const uint8_t event[] = { 0xff, 0x2f, 0x00 };
-    const size_t event_size = sizeof(event) / sizeof(*event);
+    const size_t event_size = sizeof (event) / sizeof (*event);
 
-    if (_midi_track_write_vlq(track, dt)) {
+    if (_midi_track_write_vlq(track, dt))
+    {
         return MIDI_ERROR;
     }
 
     uint8_t *ptr = _midi_track_alloc(track, event_size);
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         return MIDI_ERROR;
     }
 
@@ -287,15 +332,18 @@ int midi_track_add_end_of_track_event(midi_track_t *track, uint32_t dt)
     return MIDI_OK;
 }
 
-int midi_track_add_meta_event_text(midi_track_t *track, uint32_t dt,
-                                   uint8_t kind, const char *text)
+int
+midi_track_add_meta_event_text(midi_track_t *track, uint32_t dt,
+                               uint8_t kind, const char *text)
 {
-    if (_midi_track_write_vlq(track, dt)) {
+    if (_midi_track_write_vlq(track, dt))
+    {
         return MIDI_ERROR;
     }
 
     uint8_t *hdr = _midi_track_alloc(track, 2);
-    if (hdr == NULL) {
+    if (hdr == NULL)
+    {
         return MIDI_ERROR;
     }
 
@@ -304,12 +352,14 @@ int midi_track_add_meta_event_text(midi_track_t *track, uint32_t dt,
 
     uint32_t len = 0x0fffffff & strlen(text);
 
-    if (_midi_track_write_vlq(track, len)) {
+    if (_midi_track_write_vlq(track, len))
+    {
         return MIDI_ERROR;
     }
 
     char *ptr = (char *) _midi_track_alloc(track, len);
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         return MIDI_ERROR;
     }
 
@@ -317,7 +367,8 @@ int midi_track_add_meta_event_text(midi_track_t *track, uint32_t dt,
     return MIDI_OK;
 }
 
-midi_t midi_create(uint16_t format, uint16_t division)
+midi_t
+midi_create(uint16_t format, uint16_t division)
 {
     midi_t f = { 0 };
     f.format = format;
@@ -327,10 +378,12 @@ midi_t midi_create(uint16_t format, uint16_t division)
     return f;
 }
 
-void midi_destroy(midi_t *midi)
+void
+midi_destroy(midi_t *midi)
 {
     midi_track_t *track = midi->tracks;
-    while (track) {
+    while (track)
+    {
         midi_track_t *tmp = track;
         track = track->next;
         midi_track_destroy(tmp);
@@ -338,17 +391,20 @@ void midi_destroy(midi_t *midi)
     midi->tracks = NULL;
 }
 
-void midi_add_track(midi_t *midi, midi_track_t *track)
+void
+midi_add_track(midi_t *midi, midi_track_t *track)
 {
     midi_track_t *ptr = midi->tracks;
 
-    if (ptr == NULL) {
+    if (ptr == NULL)
+    {
         midi->tracks = track;
         midi->ntrks++;
         return;
     }
 
-    while (ptr->next) {
+    while (ptr->next)
+    {
         ptr = ptr->next;
     }
 
@@ -356,32 +412,40 @@ void midi_add_track(midi_t *midi, midi_track_t *track)
     midi->ntrks++;
 }
 
-int midi_write(midi_t *midi, FILE *f)
+int
+midi_write(midi_t *midi, FILE *f)
 {
-    if (fwrite("MThd", 1, 4, f) < 4) {
+    if (fwrite("MThd", 1, 4, f) < 4)
+    {
         return MIDI_ERROR;
     }
 
-    if (_fwrite_u32_be(f, 6)) {
+    if (_fwrite_u32_be(f, 6))
+    {
         return MIDI_ERROR;
     }
 
-    if (_fwrite_u16_be(f, midi->format)) {
+    if (_fwrite_u16_be(f, midi->format))
+    {
         return MIDI_ERROR;
     }
 
-    if (_fwrite_u16_be(f, midi->ntrks)) {
+    if (_fwrite_u16_be(f, midi->ntrks))
+    {
         return MIDI_ERROR;
     }
 
-    if (_fwrite_u16_be(f, midi->division)) {
+    if (_fwrite_u16_be(f, midi->division))
+    {
         return MIDI_ERROR;
     }
 
     midi_track_t *track = midi->tracks;
 
-    while (track) {
-        if (_midi_track_write_to_file(track, f)) {
+    while (track)
+    {
+        if (_midi_track_write_to_file(track, f))
+        {
             return MIDI_ERROR;
         }
         track = track->next;
